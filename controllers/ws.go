@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -43,7 +44,7 @@ func (this *WsController) WebSocket() {
 		this.Redirect("/", 302)
 		return
 	}
-	func() {
+	err := func() error {
 		//如果是同一个房间，名字一样的话，第二次进入会把第一次覆盖
 		clients.Mu.Lock()
 		defer clients.Mu.Unlock()
@@ -58,10 +59,14 @@ func (this *WsController) WebSocket() {
 		}
 		//限制房间最大人数,得从新进房
 		if clients.RoomNum[room] >= 2 {
-			this.Redirect("/", 302)
-			return
+			return errors.New("max room num")
 		}
+		return nil
 	}()
+	if err != nil {
+		this.Redirect("/", 302)
+		return
+	}
 	fmt.Println("clients.RoomNum[room]", clients.RoomNum[room])
 
 	//创建新的连接
